@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: angusshopx
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/store/config
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_SUPABASE_URL
+        value: https://bqysxqbnkyksehcyhkad.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxeXN4cWJua3lrc2VoY3loa2FkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzNzk2OTUsImV4cCI6MjEwNjk1NTY5NX0.l5Zoeb2lj56Pw9SZLZxXsQMPDsxPQLEnTKaZ4huLfxU

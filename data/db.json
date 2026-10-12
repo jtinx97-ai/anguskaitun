@@ -1,0 +1,157 @@
+{
+  "products": [],
+  "stock": [],
+  "users": {
+    "demo-user": {
+      "id": "demo-user",
+      "email": "customer@angusshopx.com",
+      "name": "ลูกค้า AngusShopX",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=angus1",
+      "balance": 100,
+      "role": "user",
+      "createdAt": "2026-10-07T15:37:36.575Z"
+    },
+    "admin-user": {
+      "id": "admin-user",
+      "email": "jtinx97@gmail.com",
+      "name": "Admin Angus",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=jtinx97%40gmail.com",
+      "balance": 10199,
+      "role": "admin",
+      "createdAt": "2026-10-07T15:37:36.575Z"
+    },
+    "usr-jtinx97_gmail_com": {
+      "id": "usr-jtinx97_gmail_com",
+      "email": "jtinx97@gmail.com",
+      "name": "Angus Master",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=jtinx97@gmail.com",
+      "balance": 0,
+      "role": "admin",
+      "createdAt": "2026-10-07T15:44:53.689Z"
+    },
+    "usr-jtinx9f7_gmail_com": {
+      "id": "usr-jtinx9f7_gmail_com",
+      "email": "jtinx9f7@gmail.com",
+      "name": "dd",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=jtinx9f7@gmail.com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-07T16:04:47.481Z"
+    },
+    "usr-dddd_gmail_com": {
+      "id": "usr-dddd_gmail_com",
+      "email": "dddd@gmail.com",
+      "name": "dddd",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=dddd@gmail.com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-07T16:05:55.263Z"
+    },
+    "usr-player1_gmail_com": {
+      "id": "usr-player1_gmail_com",
+      "email": "player1@gmail.com",
+      "name": "AngusBlox",
+      "password": "pass1234",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=player1@gmail.com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-07T16:09:12.587Z"
+    },
+    "usr-player2_gmail_com": {
+      "id": "usr-player2_gmail_com",
+      "email": "player2@gmail.com",
+      "name": "AngusBlox",
+      "password": "pass5678",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=player2@gmail.com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-07T16:09:21.763Z"
+    },
+    "usr-newbie_gmail_com": {
+      "id": "usr-newbie_gmail_com",
+      "email": "newbie@gmail.com",
+      "name": "newbie",
+      "password": "mypassword",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=newbie@gmail.com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-07T16:09:27.557Z"
+    },
+    "jtinx97@gmail.com": {
+      "id": "jtinx97@gmail.com",
+      "email": "jtinx97@gmail.com",
+      "name": "Admin Angus",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=jtinx97@gmail.com",
+      "balance": 0,
+      "role": "admin",
+      "createdAt": "2026-10-12T20:06:48.038Z"
+    },
+    "usr-somchai_gmail_com": {
+      "id": "usr-somchai_gmail_com",
+      "email": "somchai@gmail.com",
+      "name": "สมชาย นักสุ่ม",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=usr-somchai_gmail_com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-12T20:07:02.730Z"
+    },
+    "usr-customer_google_test_gmail_com": {
+      "id": "usr-customer_google_test_gmail_com",
+      "email": "customer_google_test@gmail.com",
+      "name": "ลูกค้าทดสอบ Google",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=usr-customer_google_test_gmail_com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-12T20:12:27.587Z"
+    },
+    "usr-player_naruto_gmail_com": {
+      "id": "usr-player_naruto_gmail_com",
+      "email": "player_naruto@gmail.com",
+      "name": "นารูโตะ",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=usr-player_naruto_gmail_com",
+      "balance": 0,
+      "role": "user",
+      "createdAt": "2026-10-12T20:13:28.080Z"
+    }
+  },
+  "orders": [],
+  "transactions": [
+    {
+      "id": "tx-tm-1791390186612",
+      "userId": "admin-user",
+      "userEmail": "jtinx97@gmail.com",
+      "method": "truemoney_voucher",
+      "amount": 100,
+      "voucherHash": "xx11xxx",
+      "status": "success",
+      "receivingAcc": "0829848852",
+      "createdAt": "2026-10-07T16:23:06.612Z",
+      "rawResponse": null
+    },
+    {
+      "id": "tx-tm-1791390160307",
+      "userId": "admin-user",
+      "userEmail": "jtinx97@gmail.com",
+      "method": "truemoney_voucher",
+      "amount": 100,
+      "voucherHash": "xxxxxx",
+      "status": "success",
+      "receivingAcc": "0829848852",
+      "createdAt": "2026-10-07T16:22:40.307Z",
+      "rawResponse": null
+    }
+  ],
+  "config": {
+    "storeName": "AngusShopX",
+    "bankName": "ธนาคารกสิกรไทย (KBANK)",
+    "bankAccount": "1668303060",
+    "bankAccountName": "กฤตินสุโขพล",
+    "truemoneyPhone": "0829848852",
+    "slipokApiKey": "SLIPOKMU0I0O9",
+    "slipokApiUrl": "https://api.slipok.com/api/line/apikey/77989",
+    "supabaseUrl": "https://bqysxqbnkyksehcyhkad.supabase.co",
+    "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxeXN4cWJua3lrc2VoY3loa2FkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzNzk2OTUsImV4cCI6MjEwNjk1NTY5NX0.l5Zoeb2lj56Pw9SZLZxXsQMPDsxPQLEnTKaZ4huLfxU",
+    "adminPin": "190850",
+    "announcement": "ยินดีต้อนรับสู่ AngusShopX ร้านขายรหัสไก่ตัน Blox Fruits อัตโนมัติ 24 ชม."
+  }
+}

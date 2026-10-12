@@ -1,0 +1,6 @@
+{
+  "name": "AngusShopX - ร้านขายไก่ตัน Blox Fruits อัตโนมัติ",
+  "description": "AngusShopX ร้านขายรหัสไก่ตัน Blox Fruits สต็อกแน่น ปลอดภัย 100% ระบบเติมเงินสลิป SlipOK และ TrueWallet อัตโนมัติ 24 ชั่วโมง",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
