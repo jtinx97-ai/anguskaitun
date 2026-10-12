@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   ShoppingCart, 
   Wallet, 
@@ -10,7 +10,8 @@ import {
   Sparkles,
   Building2,
   Database,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown
 } from 'lucide-react';
 import { User } from '../types';
 
@@ -35,6 +36,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onLogout,
 }) => {
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#0c061a]/90 border-b border-purple-500/20 shadow-[0_4px_30px_rgba(147,51,234,0.12)]">
       {/* Top micro corporate bar */}
@@ -152,8 +167,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
 
               {/* User Dropdown / Menu */}
-              <div className="relative group">
-                <div className="flex items-center gap-2 pl-1 cursor-pointer">
+              <div ref={userMenuRef} className="relative group">
+                <button
+                  type="button"
+                  onClick={() => setIsUserMenuOpen(prev => !prev)}
+                  className="flex items-center gap-2 pl-1 py-1 rounded-2xl hover:bg-purple-900/30 transition cursor-pointer select-none focus:outline-none"
+                  aria-expanded={isUserMenuOpen}
+                >
                   <img
                     src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`}
                     alt={user.name}
@@ -167,49 +187,70 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {user.role === 'admin' ? 'เจ้าของร้าน' : 'สมาชิกระดับ VIP'}
                     </span>
                   </div>
-                </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-purple-300/80 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180 text-white' : ''}`} />
+                </button>
 
-                {/* Dropdown Menu */}
-                <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-[#140b28] border border-purple-500/30 shadow-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 z-50">
-                  <div className="px-4 py-2 border-b border-purple-500/20 text-xs text-purple-200">
-                    <p className="font-bold truncate">{user.name}</p>
-                    <p className="text-[10px] text-purple-400/70 truncate font-mono">{user.email}</p>
-                  </div>
+                {/* Dropdown Menu Container with seamless hover bridge */}
+                <div 
+                  className={`absolute right-0 top-full pt-1.5 w-52 z-50 transition-all duration-150 ${
+                    isUserMenuOpen 
+                      ? 'opacity-100 visible pointer-events-auto translate-y-0' 
+                      : 'opacity-0 invisible pointer-events-none -translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto group-hover:translate-y-0'
+                  }`}
+                >
+                  <div className="rounded-2xl bg-[#140b28] border border-purple-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.7)] py-2 backdrop-blur-xl">
+                    <div className="px-4 py-2 border-b border-purple-500/20 text-xs text-purple-200">
+                      <p className="font-bold truncate text-white">{user.name}</p>
+                      <p className="text-[10px] text-purple-400/80 truncate font-mono">{user.email}</p>
+                    </div>
 
-                  <button
-                    onClick={onOpenOrders}
-                    className="w-full px-4 py-2 text-left text-xs text-purple-200 hover:bg-purple-900/40 flex items-center gap-2 transition cursor-pointer"
-                  >
-                    <Package className="w-4 h-4 text-purple-400" />
-                    <span>ไอดีที่ซื้อแล้ว</span>
-                  </button>
-
-                  <button
-                    onClick={onOpenTopup}
-                    className="w-full px-4 py-2 text-left text-xs text-purple-200 hover:bg-purple-900/40 flex items-center gap-2 transition cursor-pointer"
-                  >
-                    <Wallet className="w-4 h-4 text-emerald-400" />
-                    <span>เติมเงินเข้ากระเป๋า</span>
-                  </button>
-
-                  {user.role === 'admin' && (
                     <button
-                      onClick={onOpenAdmin}
-                      className="w-full px-4 py-2 text-left text-xs text-purple-300 hover:bg-purple-900/40 flex items-center gap-2 transition cursor-pointer"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onOpenOrders();
+                      }}
+                      className="w-full px-4 py-2 text-left text-xs text-purple-200 hover:bg-purple-900/40 hover:text-white flex items-center gap-2.5 transition cursor-pointer"
                     >
-                      <Settings className="w-4 h-4 text-purple-400" />
-                      <span>จัดการสต็อกสินค้า</span>
+                      <Package className="w-4 h-4 text-purple-400" />
+                      <span>ไอดีที่ซื้อแล้ว</span>
                     </button>
-                  )}
 
-                  <div className="border-t border-purple-500/20 mt-1 pt-1">
                     <button
-                      onClick={onLogout}
-                      className="w-full px-4 py-2 text-left text-xs text-rose-300 hover:bg-rose-950/40 flex items-center gap-2 transition cursor-pointer"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onOpenTopup();
+                      }}
+                      className="w-full px-4 py-2 text-left text-xs text-purple-200 hover:bg-purple-900/40 hover:text-white flex items-center gap-2.5 transition cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4" />
-                      <span>ออกจากระบบ</span>
+                      <Wallet className="w-4 h-4 text-emerald-400" />
+                      <span>เติมเงินเข้ากระเป๋า</span>
                     </button>
+
+                    {user.role === 'admin' && (
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenAdmin();
+                        }}
+                        className="w-full px-4 py-2 text-left text-xs text-purple-300 hover:bg-purple-900/40 hover:text-white flex items-center gap-2.5 transition cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4 text-purple-400" />
+                        <span>จัดการสต็อกสินค้า</span>
+                      </button>
+                    )}
+
+                    <div className="border-t border-purple-500/20 mt-1 pt-1">
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onLogout();
+                        }}
+                        className="w-full px-4 py-2 text-left text-xs text-rose-300 hover:bg-rose-950/50 hover:text-rose-200 flex items-center gap-2.5 transition cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 text-rose-400" />
+                        <span>ออกจากระบบ</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

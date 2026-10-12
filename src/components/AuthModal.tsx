@@ -7,8 +7,7 @@ import {
   ExternalLink,
   ShieldCheck,
   CheckCircle2,
-  ClipboardPaste,
-  Crown
+  ClipboardPaste
 } from 'lucide-react';
 import { 
   buildGoogleOAuthUrl,
@@ -186,19 +185,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // Instant login for owner / admin testing
-  const handleInstantAdminLogin = async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    try {
-      await completeLoginWithSession('jtinx97@gmail.com', 'jtinx97 (เจ้าของร้าน)', undefined, 'usr-jtinx97_gmail_com');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Listen for callback postMessage from OAuth popup
   useEffect(() => {
     if (!isOpen) return;
@@ -339,17 +325,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <span>เข้าสู่ระบบด้วย Google</span>
             <ExternalLink className="w-4 h-4 text-slate-500 ml-1" />
           </a>
-
-          {/* Instant Login for Owner / Admin (jtinx97@gmail.com) */}
-          <button
-            type="button"
-            disabled={isLoading}
-            onClick={handleInstantAdminLogin}
-            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-900/80 to-indigo-900/80 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/40 text-purple-100 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-md disabled:opacity-50"
-          >
-            <Crown className="w-4 h-4 text-amber-400" />
-            <span>เข้าสู่ระบบด่วนด้วย Google (jtinx97@gmail.com)</span>
-          </button>
 
           {/* Clipboard Auto-detection Button (Shown when clipboard has token or requested) */}
           {hasClipboardToken && (
