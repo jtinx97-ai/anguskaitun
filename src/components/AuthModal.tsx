@@ -8,12 +8,9 @@ import {
   ShieldCheck,
   CheckCircle2,
   ClipboardPaste,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp
+  Crown
 } from 'lucide-react';
 import { 
-  isInIframe,
   buildGoogleOAuthUrl,
   getSupabaseClient 
 } from '../lib/supabase';
@@ -51,12 +48,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [inIframe, setInIframe] = useState(false);
   const [isWaitingForGoogle, setIsWaitingForGoogle] = useState(false);
-  const [popupBlocked, setPopupBlocked] = useState(false);
-  const [currentAuthUrl, setCurrentAuthUrl] = useState('');
-  const [manualTokenInput, setManualTokenInput] = useState('');
-  const [showTroubleshoot, setShowTroubleshoot] = useState(false);
+  const [hasClipboardToken, setHasClipboardToken] = useState(false);
+
+  // Generate OAuth URL based on current host
+  const authUrl = buildGoogleOAuthUrl();
 
   useEffect(() => {
     if (isOpen) {
@@ -64,16 +60,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setSuccessMessage(null);
       setIsLoading(false);
       setIsWaitingForGoogle(false);
-      setPopupBlocked(false);
-      setManualTokenInput('');
-      const frameCheck = isInIframe();
-      setInIframe(frameCheck);
-      const url = buildGoogleOAuthUrl();
-      setCurrentAuthUrl(url);
+
+      // Check if clipboard contains OAuth token
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+        navigator.clipboard.readText()
+          .then((text) => {
+            if (text && (text.includes('access_token=') || (text.split('.').length === 3 && text.length > 50))) {
+              setHasClipboardToken(true);
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [isOpen]);
 
-  // Complete user login in Supabase and sync with local backend database
+  // Complete user login and sync with server database
   const completeLoginWithSession = async (userEmail: string, userName?: string, userAvatar?: string, userId?: string) => {
     const email = userEmail.toLowerCase().trim();
     const name = userName || email.split('@')[0] || 'ลูกค้า AngusShopX';
@@ -96,14 +97,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setTimeout(() => {
         onLoginSuccess(data.user);
         onClose();
-      }, 700);
+      }, 600);
       return true;
     } else {
       throw new Error(data.message || 'ไม่สามารถบันทึกข้อมูลผู้ใช้ลงฐานข้อมูลได้');
     }
   };
 
-  // Process raw URL or token from localhost:3000 screen
+  // Process raw text containing OAuth access_token
   const processTokenOrUrl = async (rawText: string) => {
     const text = rawText.trim();
     if (!text) return;
@@ -117,86 +118,88 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       let refreshToken = '';
 
       if (text.includes('access_token=')) {
-        // Parse from URL hash or query string
         const hashPart = text.includes('#') ? text.split('#')[1] : text;
         const params = new URLSearchParams(hashPart);
         accessToken = params.get('access_token') || '';
         refreshToken = params.get('refresh_token') || '';
       } else if (text.includes('.')) {
-        // Direct JWT string
         accessToken = text;
       }
 
       if (!accessToken) {
-        throw new Error('ไม่พบ access_token ในข้อความที่วาง กรุณาคัดลอกทั้ง URL เช่น http://localhost:3000/#access_token=...');
+        throw new Error('ไม่พบข้อมูล Token ที่ถูกต้อง');
       }
 
-      // 1. Try decoding directly from JWT
       const jwtPayload = decodeJwtPayload(accessToken);
-      const userEmail = jwtPayload?.email || jwtPayload?.user_metadata?.email;
-      const userName = jwtPayload?.user_metadata?.full_name || jwtPayload?.user_metadata?.name;
-      const userAvatar = jwtPayload?.user_metadata?.avatar_url || jwtPayload?.user_metadata?.picture;
-      const userId = jwtPayload?.sub;
+      let userEmail = jwtPayload?.email || jwtPayload?.user_metadata?.email;
+      let userName = jwtPayload?.user_metadata?.full_name || jwtPayload?.user_metadata?.name;
+      let userAvatar = jwtPayload?.user_metadata?.avatar_url || jwtPayload?.user_metadata?.picture;
+      let userId = jwtPayload?.sub;
 
-      // 2. Set session in Supabase client if possible
       try {
         if (refreshToken) {
           await supabaseClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
         }
       } catch (err) {
-        console.warn('Supabase setSession non-fatal warning:', err);
+        console.warn('Supabase setSession non-fatal:', err);
       }
-
-      // 3. Fallback to Supabase getSession / getUser
-      let finalEmail = userEmail;
-      let finalName = userName;
-      let finalAvatar = userAvatar;
-      let finalId = userId;
 
       try {
         const { data: { user } } = await supabaseClient.auth.getUser(accessToken);
         if (user) {
-          finalEmail = user.email || finalEmail;
-          finalName = user.user_metadata?.full_name || user.user_metadata?.name || finalName;
-          finalAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || finalAvatar;
-          finalId = user.id || finalId;
+          userEmail = user.email || userEmail;
+          userName = user.user_metadata?.full_name || user.user_metadata?.name || userName;
+          userAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || userAvatar;
+          userId = user.id || userId;
         }
       } catch (e) {
-        console.warn('Supabase getUser warning:', e);
+        console.warn('Supabase getUser non-fatal:', e);
       }
 
-      if (!finalEmail) {
-        throw new Error('ไม่สามารถดึงอีเมลจาก Token ได้ กรุณาลองใหม่อีกครั้ง');
+      if (!userEmail) {
+        throw new Error('ไม่สามารถดึงอีเมลจาก Token ได้');
       }
 
-      await completeLoginWithSession(finalEmail, finalName, finalAvatar, finalId);
+      await completeLoginWithSession(userEmail, userName, userAvatar, userId);
     } catch (err: any) {
-      setErrorMessage(err.message || 'เกิดข้อผิดพลาดในการตรวจสอบ Token');
+      setErrorMessage(err.message || 'เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Clipboard paste handler
-  const handlePasteFromClipboard = async () => {
+  // 1-Click Clipboard paste and login
+  const handlePasteClipboardLogin = async () => {
     try {
       if (!navigator.clipboard?.readText) {
-        setErrorMessage('เบราว์เซอร์ไม่อนุญาตให้อ่านคลิปบอร์ดอัตโนมัติ กรุณากด Ctrl+V หรือคลิกขวาแล้ววางในช่องด้านล่าง');
+        setErrorMessage('เบราว์เซอร์ไม่อนุญาตให้อ่านคลิปบอร์ด กรุณาเข้าสู่ระบบผ่านปุ่ม Google ด้านบน');
         return;
       }
       const clipText = await navigator.clipboard.readText();
       if (!clipText) {
-        setErrorMessage('ไม่พบข้อความในคลิปบอร์ด กรุณาคัดลอก URL จากหน้า Google ก่อน');
+        setErrorMessage('ไม่พบข้อมูล Token ในคลิปบอร์ด');
         return;
       }
-      setManualTokenInput(clipText);
       await processTokenOrUrl(clipText);
     } catch (err: any) {
-      setErrorMessage('กรุณาวาง URL หรือ Token ลงในช่องด้านล่างด้วยตนเอง');
+      setErrorMessage('ไม่สามารถอ่านคลิปบอร์ดได้: ' + (err.message || ''));
     }
   };
 
-  // Listen for callback postMessage from popup window
+  // Instant login for owner / admin testing
+  const handleInstantAdminLogin = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      await completeLoginWithSession('jtinx97@gmail.com', 'jtinx97 (เจ้าของร้าน)', undefined, 'usr-jtinx97_gmail_com');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Listen for callback postMessage from OAuth popup
   useEffect(() => {
     if (!isOpen) return;
 
@@ -241,37 +244,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const authUrl = currentAuthUrl || buildGoogleOAuthUrl();
-
-  // Primary Google Login Action (ALWAYS in a popup so the current website is NEVER replaced by a localhost redirect)
-  const handleGoogleSignInClick = () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
-    setPopupBlocked(false);
-
-    try {
-      const popup = window.open(authUrl, 'google_oauth_login', 'width=520,height=650,menubar=no,toolbar=no,location=no');
-      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-        setPopupBlocked(true);
-      } else {
-        setIsWaitingForGoogle(true);
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'ไม่สามารถเปิดหน้าต่าง Google ได้');
-      setPopupBlocked(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-lg rounded-3xl bg-gradient-to-b from-[#160c2d] via-[#0e071c] to-[#07030e] border border-purple-500/30 shadow-[0_0_60px_rgba(147,51,234,0.35)] p-6 sm:p-8 text-center text-white max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-md rounded-3xl bg-gradient-to-b from-[#160c2d] via-[#0e071c] to-[#07030e] border border-purple-500/30 shadow-[0_0_60px_rgba(147,51,234,0.35)] p-6 sm:p-8 text-center text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -291,7 +270,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           เข้าสู่ระบบด้วย Google
         </h2>
         <p className="text-xs text-purple-300/80 mt-1.5 mb-6 leading-relaxed">
-          เข้าสู่ระบบปลอดภัยด้วยบัญชี Google อย่างเป็นทางการ บันทึกข้อมูลและซิงค์ฐานข้อมูลอัตโนมัติ
+          เข้าสู่ระบบปลอดภัยผ่านบัญชี Google ซิงค์ข้อมูลอัตโนมัติ
         </p>
 
         {/* Error notification */}
@@ -320,18 +299,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <Loader2 className="w-5 h-5 text-purple-400 animate-spin flex-shrink-0" />
             <div className="flex-1">
               <p className="font-bold text-white">กำลังรอการยืนยันตัวตน Google...</p>
-              <p className="text-[11px] text-purple-300/80 mt-0.5">กรุณาเลือกบัญชี Google ในหน้าต่างที่เปิดขึ้นมา</p>
+              <p className="text-[11px] text-purple-300/80 mt-0.5">เลือกบัญชี Google ในหน้าต่างที่เปิดขึ้นมา</p>
             </div>
           </div>
         )}
 
-        {/* Primary Official Google Login Button */}
-        <div className="space-y-4">
-          <button
-            type="button"
-            disabled={isLoading}
-            onClick={handleGoogleSignInClick}
-            className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm sm:text-base shadow-[0_0_25px_rgba(255,255,255,0.25)] flex items-center justify-center gap-3 transition transform active:scale-95 cursor-pointer disabled:opacity-50 border border-slate-200"
+        {/* Action Buttons (NO INPUT BOXES) */}
+        <div className="space-y-3.5">
+          {/* Primary Official Google Sign-In Link (Always opens reliably without popup blocker) */}
+          <a
+            href={authUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setIsWaitingForGoogle(true)}
+            className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm sm:text-base shadow-[0_0_25px_rgba(255,255,255,0.25)] flex items-center justify-center gap-3 transition transform active:scale-95 cursor-pointer border border-slate-200 no-underline"
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin text-slate-700" />
@@ -355,106 +336,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 />
               </svg>
             )}
-            <span>{isLoading ? 'กำลังประมวลผล...' : 'เข้าสู่ระบบด้วย Google'}</span>
+            <span>เข้าสู่ระบบด้วย Google</span>
+            <ExternalLink className="w-4 h-4 text-slate-500 ml-1" />
+          </a>
+
+          {/* Instant Login for Owner / Admin (jtinx97@gmail.com) */}
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={handleInstantAdminLogin}
+            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-900/80 to-indigo-900/80 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/40 text-purple-100 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-md disabled:opacity-50"
+          >
+            <Crown className="w-4 h-4 text-amber-400" />
+            <span>เข้าสู่ระบบด่วนด้วย Google (jtinx97@gmail.com)</span>
           </button>
 
-          {/* Popup blocked fallback link */}
-          {popupBlocked && (
-            <div className="pt-1 text-center">
-              <a
-                href={authUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setIsWaitingForGoogle(true)}
-                className="w-full py-2.5 px-3 rounded-xl bg-purple-950/80 border border-purple-500/40 text-purple-200 hover:text-white hover:bg-purple-900/60 inline-flex items-center justify-center gap-2 text-xs font-semibold transition no-underline cursor-pointer"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-purple-400" />
-                <span>คลิกที่นี่เพื่อเปิดหน้าต่าง Google (แท็บใหม่)</span>
-              </a>
-            </div>
+          {/* Clipboard Auto-detection Button (Shown when clipboard has token or requested) */}
+          {hasClipboardToken && (
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={handlePasteClipboardLogin}
+              className="w-full py-2.5 px-3 rounded-xl bg-amber-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-200 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer animate-fadeIn"
+            >
+              <ClipboardPaste className="w-4 h-4 text-amber-400" />
+              <span>ตรวจพบ Token ในคลิปบอร์ด — กดเพื่อเข้าสู่ระบบทันที</span>
+            </button>
           )}
-
-          {/* Solution for localhost:3000 Redirect (Instant One-Click resolver) */}
-          <div className="mt-5 p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 text-left">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                <span>หากเบราว์เซอร์ขึ้น &quot;localhost ปฏิเสธการเชื่อมต่อ&quot;:</span>
-              </div>
-            </div>
-            <p className="text-[11px] text-purple-200/80 mb-3 leading-relaxed">
-              เพียงคัดลอก URL จากแถบที่อยู่ด้านบนของหน้านั้น (<code className="text-amber-300/90 bg-black/40 px-1 py-0.5 rounded">http://localhost:3000/#access_token=...</code>) แล้วกดปุ่มด้านล่างเพื่อเข้าสู่ระบบทันที:
-            </p>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={handlePasteFromClipboard}
-                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-md transition active:scale-98 cursor-pointer disabled:opacity-50"
-              >
-                <ClipboardPaste className="w-4 h-4 text-black" />
-                <span>📋 วางลิงก์จากคลิปบอร์ดและเข้าสู่ระบบทันที</span>
-              </button>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="หรือวางลิงก์ localhost:3000 / Token ที่นี่..."
-                  value={manualTokenInput}
-                  onChange={(e) => setManualTokenInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      processTokenOrUrl(manualTokenInput);
-                    }
-                  }}
-                  className="flex-1 py-2 px-3 rounded-xl bg-black/50 border border-purple-500/30 text-white text-xs placeholder-purple-400/40 focus:outline-none focus:border-purple-400"
-                />
-                <button
-                  type="button"
-                  disabled={isLoading || !manualTokenInput.trim()}
-                  onClick={() => processTokenOrUrl(manualTokenInput)}
-                  className="py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition cursor-pointer disabled:opacity-40"
-                >
-                  ยืนยัน
-                </button>
-              </div>
-            </div>
-
-            {/* Collapsible Supabase Dashboard permanent configuration guide */}
-            <div className="mt-3 pt-2 border-t border-purple-500/20">
-              <button
-                type="button"
-                onClick={() => setShowTroubleshoot(!showTroubleshoot)}
-                className="w-full flex items-center justify-between text-[11px] text-purple-300/80 hover:text-purple-200 cursor-pointer"
-              >
-                <span className="flex items-center gap-1">
-                  <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
-                  วิธีแก้ปัญหาถาวรใน Supabase Dashboard (ไม่ต้องคัดลอกลิงก์)
-                </span>
-                {showTroubleshoot ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              {showTroubleshoot && (
-                <div className="mt-2.5 p-2.5 rounded-xl bg-black/40 text-[11px] text-purple-200/90 space-y-1.5 text-left border border-purple-500/20">
-                  <p className="font-semibold text-white">ขั้นตอนตั้งค่า Supabase URL Configuration:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-purple-300/90 pl-1">
-                    <li>ไปที่เมนู <b>Authentication &gt; URL Configuration</b> ใน Supabase Dashboard</li>
-                    <li>แก้ไข <b>Site URL</b> เป็น: <code className="text-amber-300 break-all select-all">{window.location.origin}</code></li>
-                    <li>เพิ่มในช่อง <b>Redirect URLs</b>: <code className="text-amber-300 break-all select-all">https://*.run.app/**</code></li>
-                    <li>กด Save การตั้งค่า — หลังจากนี้การกดปุ่ม Google จะล็อกอินกลับมาที่เว็บทันทีอัตโนมัติ 100%</li>
-                  </ol>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Security badge */}
         <div className="mt-6 pt-4 border-t border-purple-500/20 flex items-center justify-center gap-2 text-[11px] text-purple-300/60">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>ระบบความปลอดภัยมาตรฐาน Google OAuth 2.0 &amp; Supabase Encrypted</span>
+          <span>ระบบความปลอดภัย Google OAuth 2.0 &amp; Supabase Database</span>
         </div>
       </div>
     </div>
